@@ -208,4 +208,24 @@ def gen_instance_name(){
   return instance_name
 }
 
+def archive_artifacts(){
+  sh """#!/bin/bash
+  d="artifacts_\${BUILD_TAG}"
+  mkdir -p \$d
+  cp -rp /etc/openstack_deploy \$d
+  cp -rp /var/log/ \$d/host_log
+  while read c
+  do
+    mkdir -p \$d/\$c/log
+    cp -rp /openstack/log/\$c/* \$d/\$c/log
+    cp -rp /var/lib/lxc/\$c/rootfs/etc \$d/\$c
+  done < <(lxc-ls)
+  tar cjf "\$d".tar.bz2 \$d
+  """
+  archiveArtifacts(
+    allowEmptyArchive: true,
+    artifacts: 'artifacts_*.tar.bz2'
+  )
+}
+
 return this
