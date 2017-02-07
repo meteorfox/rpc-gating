@@ -17,23 +17,17 @@ def deploy(){
 }
 
 def deploy_sh(Map args) {
-  common.conditionalStep(
-    step_name: "Deploy",
-    step: {
-      environment_vars = args.environment_vars +
-        ['ANSIBLE_FORCE_COLOR=true', 'ANSIBLE_HOST_KEY_CHECKING=False']
-      withEnv(environment_vars) {
-        ansiColor('xterm') {
-          dir("/opt/rpc-openstack/") {
-            sh """#!/bin/bash
-            scripts/deploy.sh
-            """
-          } // dir
-        } // ansiColor
-      } // withEnv
-    } // step
-  ) // conditionalStep
-
+    environment_vars = args.environment_vars +
+      ['ANSIBLE_FORCE_COLOR=true', 'ANSIBLE_HOST_KEY_CHECKING=False']
+    withEnv(environment_vars) {
+      ansiColor('xterm') {
+        dir("/opt/rpc-openstack/") {
+          sh """#!/bin/bash
+          scripts/deploy.sh
+          """
+        } // dir
+      } // ansiColor
+    } // withEnv
 }
 
 return this;

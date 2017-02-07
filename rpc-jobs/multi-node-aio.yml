@@ -44,22 +44,10 @@
           default: true
           description: Enable partitioning of host data disk device
       - string:
-          name: OSA_OPS_REPO
-          default: https://github.com/openstack/openstack-ansible-ops
-      - string:
-          name: OSA_OPS_BRANCH
-          default: master
-      - string:
-          name: RPC_GATING_REPO
-          default: "https://github.com/rcbops/rpc-gating"
-      - string:
-          name: RPC_GATING_BRANCH
-          default: "master"
-      - string:
           name: STAGES
           default: |
             Allocate Resources, Connect Slave, Setup Host, Setup Cobbler, Setup Virtual Networks,
-            Deploy VMs, Setup OpenStack Ansible, Prepare Configs, Deploy, Cleanup
+            Deploy VMs, Setup OpenStack Ansible, Prepare Configs, Deploy Script, Cleanup
           description: |
             Pipeline stages to run CSV. Note that this list does not influence execution order.
             Options:
@@ -71,9 +59,25 @@
               Deploy VMs
               Setup OpenStack Ansible
               Prepare Configs
-              Deploy
+              Deploy Script (uses deploy.sh)
+              Deploy Playbooks (uses playbooks)
               Pause (use to hold instance for investigation before cleanup)
               Cleanup
+      - text:
+          name: PLAYBOOKS
+          default: |
+            [
+              {"playbook": "setup-hosts.yml",           "path": "/opt/rpc-openstack/openstack-ansible/playbooks", "args": "--skip-tags=V-38462,V-38660"},
+              {"playbook": "ceph-all.yml",              "path": "/opt/rpc-openstack/rpcd/playbooks"},
+              {"playbook": "setup-infrastructure.yml",  "path": "/opt/rpc-openstack/openstack-ansible/playbooks"},
+              {"playbook": "setup-openstack.yml",       "path": "/opt/rpc-openstack/openstack-ansible/playbooks"},
+              {"playbook": "rpc-support.yml",           "path": "/opt/rpc-openstack/rpcd/playbooks"},
+              {"playbook": "setup-maas.yml",            "path": "/opt/rpc-openstack/rpcd/playbooks"},
+              {"playbook": "setup-logging.yml",         "path": "/opt/rpc-openstack/rpcd/playbooks"},
+              {"playbook": "verify-maas.yml",           "path": "/opt/rpc-openstack/rpcd/playbooks"}
+            ]
+          description: |
+            OSA/RPC playbooks to run if running Deploy Playbooks stage
 
     dsl: |
       node(){
@@ -91,7 +95,7 @@
           node(instance_name){
             multi_node_aio_prepare.prepare()
             common.conditionalStage(
-              stage_name: "Deploy",
+              stage_name: "Deploy Script",
               stage: {
                   deploy.deploy_sh(
                     environment_vars: [
@@ -103,6 +107,13 @@
                       "DEPLOY_MAAS=no"
                       ]
                   ) // deploy_sh
+              } // stage
+            ) // conditionalStage
+
+            common.conditionalStage(
+              stage_name: "Deploy Playbooks",
+              stage: {
+                  deploy.deploy()
               } // stage
             ) // conditionalStage
 
